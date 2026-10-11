@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f7f5ff" />
+  <title>moodly — understand your words</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+
+    :root {
+      --bg: #f7f5ff;
+      --surface: rgba(255, 255, 255, .78);
+      --surface-solid: #fff;
+      --text: #24213b;
+      --muted: #817d99;
+      --line: #eae6f5;
+      --accent: #7767e8;
+      --accent2: #a89bff;
+      --glow: rgba(119, 103, 232, .18);
+      --good: #54b99a;
+      --shadow: 0 24px 70px rgba(50, 39, 100, .09);
+      --mood: #7767e8;
+      --mood-soft: #eeebff
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    html {
+      scroll-behavior: smooth
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--text);
+      background: radial-gradient(ellipse at 10% 0%, var(--mood-soft), transparent 38%), radial-gradient(ellipse at 100% 25%, #e9f7f6, transparent 30%), var(--bg);
+      transition: background .7s ease, color .3s;
+      overflow-x: hidden
+    }
+
+    body[data-mood="joy"] {
+      --mood: #e5a12a;
+      --mood-soft: #fff2d7;
+      --accent: #e5a12a;
+      --glow: rgba(229, 161, 42, .2)
+    }
+
+    body[data-mood="love"] {
+      --mood: #e66e9b;
+      --mood-soft: #ffe8f1;
+      --accent: #d95789;
+      --glow: rgba(230, 110, 155, .2)
+    }
+
+    body[data-mood="anger"] {
+      --mood: #e15b58;
+      --mood-soft: #ffe8e4;
+      --accent: #df5a58;
+      --glow: rgba(225, 91, 88, .2)
+    }
+
+    body[data-mood="fear"] {
+      --mood: #6484d9;
+      --mood-soft: #e8efff;
+      --accent: #6484d9;
+      --glow: rgba(100, 132, 217, .2)
+    }
+
+    body[data-mood="surprise"] {
+      --mood: #20a9a0;
+      --mood-soft: #dff8f4;
+      --accent: #20a9a0;
+      --glow: rgba(32, 169, 160, .2)
+    }
+
+    body[data-mood="sadness"] {
+      --mood: #7484c9;
+      --mood-soft: #e8ebff;
+      --accent: #7484c9;
+      --glow: rgba(116, 132, 201, .2)
+    }
+
+    button,
+    textarea {
+      font: inherit
+    }
+
+    button {
+      cursor: pointer
+    }
+
+    .ambient {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: -1
+    }
+
+    .orb {
+      position: absolute;
+      width: 360px;
+      height: 360px;
+      border-radius: 50%;
+      filter: blur(70px);
+      opacity: .22;
+      animation: drift 16s ease-in-out infinite alternate;
+      background: var(--mood)
+    }
+
+    .orb.one {
+      top: 18%;
+      right: -180px
+    }
+
+    .orb.two {
+      bottom: -220px;
+      left: -130px;
+      background: #b2a6ff;
+      animation-delay: -5s
+    }
+
+    @keyframes drift {
+      to {
+        transform: translate(-35px, 40px) scale(1.12)
+      }
+    }
+
+    .shell {
+      width: min(1120px, calc(100% - 40px));
+      margin: auto
+    }
+
+    .topbar {
+      height: 88px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      text-decoration: none;
+      color: var(--text);
+      font: 800 22px Manrope, sans-serif;
+      letter-spacing: -1px
+    }
+
+    .brand-mark {
+      height: 38px;
+      width: 38px;
+      border-radius: 13px;
+      display: grid;
+      place-items: center;
+      color: white;
+      background: linear-gradient(140deg, var(--accent), #b7aaff);
+      box-shadow: 0 7px 20px var(--glow);
+      font-size: 20px
+    }
+
+    .brand span em {
+      font-style: normal;
+      color: var(--accent)
+    }
+
+    .top-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 13px
+    }
+
+    .live-dot {
+      height: 7px;
+      width: 7px;
+      background: #55c5a1;
+      border-radius: 50%;
+      box-shadow: 0 0 0 4px #55c5a11c
+    }
+
+    .pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      border-radius: 99px;
+      padding: 9px 13px
+    }
+
+    .hero {
+      text-align: center;
+      padding: 42px 0 35px;
+      animation: rise .7s both
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid #ded8ff;
+      background: #ffffffa8;
+      color: var(--accent);
+      padding: 8px 13px;
+      border-radius: 99px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase
+    }
+
+    .hero h1 {
+      font: 800 clamp(36px, 6vw, 62px)/1.08 Manrope, sans-serif;
+      letter-spacing: -2.8px;
+      margin: 22px 0 15px
+    }
+
+    .hero h1 .gradient {
+      color: var(--accent);
+      transition: color .5s
+    }
+
+    .hero p {
+      max-width: 550px;
+      margin: 0 auto;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.75
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.03fr) minmax(0, .97fr);
+      gap: 22px;
+      align-items: stretch;
+      padding-bottom: 28px
+    }
+
+    .panel {
+      border: 1px solid #ffffffd9;
+      background: var(--surface);
+      backdrop-filter: blur(18px);
+      border-radius: 27px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      animation: rise .7s both
+    }
+
+    .input-panel {
+      padding: 27px;
+      animation-delay: .1s
+    }
+
+    .result-panel {
+      padding: 27px;
+      min-height: 490px;
+      display: flex;
+      flex-direction: column;
+      animation-delay: .2s
+    }
+
+    .panel-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px
+    }
+
+    .panel-heading h2 {
+      font: 750 17px Manrope, sans-serif;
+      margin: 0;
+      letter-spacing: -.4px
+    }
+
+    .step {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      background: #f1eff9;
+      padding: 7px 10px;
+      border-radius: 9px
+    }
+
+    .helper {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin: -9px 0 18px
+    }
+
+    .textarea-wrap {
+      position: relative
+    }
+
+    .textarea-wrap:focus-within .focus-ring {
+      opacity: 1;
+      transform: scale(1)
+    }
+
+    .focus-ring {
+      position: absolute;
+      inset: -2px;
+      border: 2px solid var(--accent);
+      border-radius: 17px;
+      opacity: 0;
+      transform: scale(.99);
+      transition: .2s;
+      pointer-events: none
+    }
+
+    .textarea-wrap textarea {
+      display: block;
+      width: 100%;
+      height: 178px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #ffffffc7;
+      padding: 17px 17px 39px;
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.7;
+      outline: none;
+      transition: border .2s
+    }
+
+    .textarea-wrap textarea::placeholder {
+      color: #aaa6bc
+    }
+
+    .textarea-footer {
+      position: absolute;
+      bottom: 12px;
+      left: 15px;
+      right: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #aaa5bc;
+      font-size: 11px;
+      pointer-events: none
+    }
+
+    .textarea-footer button {
+      pointer-events: auto;
+      border: 0;
+      background: none;
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 700
+    }
+
+    .examples {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 15px 0 22px
+    }
+
+    .example {
+      border: 1px solid var(--line);
+      background: #ffffffa8;
+      color: #77728f;
+      border-radius: 99px;
+      padding: 8px 11px;
+      font-size: 12px;
+      transition: .2s
+    }
+
+    .example:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: translateY(-2px)
+    }
+
+    .analyze-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 0;
+      border-radius: 15px;
+      padding: 15px 18px;
+      background: linear-gradient(110deg, var(--accent), color-mix(in srgb, var(--accent) 72%, #b5aaff));
+      color: white;
+      font-weight: 700;
+      box-shadow: 0 10px 24px var(--glow);
+      transition: transform .2s, box-shadow .2s
+    }
+
+    .analyze-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 28px var(--glow)
+    }
+
+    .analyze-btn:disabled {
+      opacity: .75;
+      cursor: wait;
+      transform: none
+    }
+
+    .btn-arrow {
+      font-size: 18px;
+      transition: transform .2s
+    }
+
+    .analyze-btn:hover .btn-arrow {
+      transform: translateX(4px)
+    }
+
+    .privacy-note {
+      text-align: center;
+      font-size: 11px;
+      color: #a29db4;
+      margin: 13px 0 0
+    }
+
+    .result-empty {
+      margin: auto;
+      text-align: center;
+      max-width: 285px;
+      padding: 30px 0
+    }
+
+    .empty-art {
+      width: 132px;
+      height: 132px;
+      border-radius: 38px;
+      margin: 0 auto 25px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(145deg, #fff, #eeebff);
+      box-shadow: inset 0 0 0 1px #fff, 0 14px 38px #7770b51a;
+      position: relative
+    }
+
+    .empty-art:before,
+    .empty-art:after {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+      background: #b7aaff
+    }
+
+    .empty-art:before {
+      width: 9px;
+      height: 9px;
+      top: 18px;
+      right: 13px
+    }
+
+    .empty-art:after {
+      width: 6px;
+      height: 6px;
+      bottom: 18px;
+      left: 13px;
+      background: #f3bd6a
+    }
+
+    .face {
+      font-size: 59px;
+      filter: drop-shadow(0 8px 7px #7770b522);
+      animation: bob 3s ease-in-out infinite
+    }
+
+    @keyframes bob {
+      50% {
+        transform: translateY(-7px) rotate(2deg)
+      }
+    }
+
+    .result-empty h3 {
+      font: 750 19px Manrope, sans-serif;
+      margin: 0 0 9px
+    }
+
+    .result-empty p {
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--muted);
+      margin: 0
+    }
+
+    .result-content {
+      display: none;
+      animation: fadeIn .55s both
+    }
+
+    .result-content.show {
+      display: block
+    }
+
+    .result-topline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px
+    }
+
+    .result-topline h2 {
+      font: 750 17px Manrope, sans-serif;
+      margin: 0
+    }
+
+    .result-tag {
+      font-size: 11px;
+      color: var(--accent);
+      background: var(--mood-soft);
+      border-radius: 99px;
+      padding: 7px 10px;
+      font-weight: 700
+    }
+
+    .emotion-main {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 18px;
+      border: 1px solid color-mix(in srgb, var(--accent) 20%, white);
+      background: linear-gradient(125deg, var(--mood-soft), #ffffff9c);
+      border-radius: 20px;
+      margin-bottom: 22px;
+      transition: background .5s
+    }
+
+    .emotion-icon {
+      height: 76px;
+      width: 76px;
+      flex-shrink: 0;
+      display: grid;
+      place-items: center;
+      border-radius: 23px;
+      background: #ffffffba;
+      font-size: 43px;
+      box-shadow: 0 8px 22px var(--glow);
+      animation: pop .55s cubic-bezier(.2, .8, .2, 1) both
+    }
+
+    .emotion-kicker {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .1em
+    }
+
+    .emotion-name {
+      font: 800 27px Manrope, sans-serif;
+      letter-spacing: -1px;
+      margin: 4px 0
+    }
+
+    .confidence {
+      font-size: 13px;
+      color: var(--muted)
+    }
+
+    .confidence strong {
+      color: var(--accent)
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 700;
+      margin: 0 0 15px
+    }
+
+    .section-title span {
+      font-size: 11px;
+      color: #a29db4;
+      font-weight: 500
+    }
+
+    .prob-list {
+      display: grid;
+      gap: 13px
+    }
+
+    .prob-row {
+      display: grid;
+      grid-template-columns: 82px 1fr 42px;
+      gap: 10px;
+      align-items: center;
+      font-size: 12px
+    }
+
+    .prob-label {
+      color: #716d85;
+      display: flex;
+      align-items: center;
+      gap: 6px
+    }
+
+    .prob-track {
+      height: 7px;
+      background: #eeecf5;
+      border-radius: 99px;
+      overflow: hidden
+    }
+
+    .prob-fill {
+      height: 100%;
+      width: 0;
+      border-radius: 99px;
+      background: var(--accent);
+      transition: width .9s cubic-bezier(.2, .8, .2, 1)
+    }
+
+    .prob-row:first-child .prob-fill {
+      background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 50%, white))
+    }
+
+    .prob-value {
+      text-align: right;
+      font-weight: 700;
+      font-size: 11px;
+      color: #77728f;
+      font-variant-numeric: tabular-nums
+    }
+
+    .result-quote {
+      margin-top: 22px;
+      padding: 13px 15px;
+      background: #ffffff91;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      font-size: 12px;
+      line-height: 1.65;
+      color: #77728f;
+      font-style: italic;
+      overflow-wrap: anywhere
+    }
+
+    .result-quote:before {
+      content: '“';
+      font: 700 25px Georgia;
+      color: var(--accent);
+      vertical-align: -7px;
+      margin-right: 5px
+    }
+
+    .result-quote:after {
+      content: '”';
+      font: 700 25px Georgia;
+      color: var(--accent);
+      vertical-align: -7px;
+      margin-left: 3px
+    }
+
+    .error-box {
+      display: none;
+      padding: 13px 14px;
+      border-radius: 13px;
+      background: #fff0ee;
+      color: #b84e49;
+      font-size: 12px;
+      line-height: 1.6;
+      margin-top: 13px
+    }
+
+    .error-box.show {
+      display: block
+    }
+
+    .result-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 15px
+    }
+
+    .text-btn {
+      border: 0;
+      background: transparent;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 7px
+    }
+
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      padding: 15px 0 30px;
+      color: #a29db4;
+      font-size: 11px
+    }
+
+    .footer strong {
+      color: #817c98
+    }
+
+    .footer-right {
+      display: flex;
+      align-items: center;
+      gap: 7px
+    }
+
+    .sparkle {
+      color: var(--accent)
+    }
+
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(16px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(7px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    @keyframes pop {
+      0% {
+        transform: scale(.7) rotate(-8deg);
+        opacity: 0
+      }
+
+      100% {
+        transform: scale(1) rotate(0);
+        opacity: 1
+      }
+    }
+
+    @media(max-width:780px) {
+      .shell {
+        width: min(560px, calc(100% - 28px))
+      }
+
+      .topbar {
+        height: 72px
+      }
+
+      .hero {
+        padding: 35px 0 27px
+      }
+
+      .hero h1 {
+        letter-spacing: -1.8px
+      }
+
+      .hero p {
+        font-size: 14px
+      }
+
+      .workspace {
+        grid-template-columns: 1fr;
+        gap: 16px
+      }
+
+      .result-panel {
+        min-height: 360px
+      }
+
+      .input-panel,
+      .result-panel {
+        padding: 22px;
+        border-radius: 23px
+      }
+
+      .result-empty {
+        padding: 16px 0
+      }
+
+      .empty-art {
+        width: 105px;
+        height: 105px;
+        border-radius: 31px
+      }
+
+      .face {
+        font-size: 49px
+      }
+
+      .footer {
+        padding-bottom: 22px
+      }
+
+      .top-right .pill {
+        display: none
+      }
+    }
+
+    @media(max-width:420px) {
+      .hero h1 {
+        font-size: 36px
+      }
+
+      .brand {
+        font-size: 20px
+      }
+
+      .input-panel,
+      .result-panel {
+        padding: 18px
+      }
+
+      .emotion-main {
+        padding: 13px;
+        gap: 13px
+      }
+
+      .emotion-icon {
+        width: 62px;
+        height: 62px;
+        border-radius: 19px;
+        font-size: 35px
+      }
+
+      .emotion-name {
+        font-size: 23px
+      }
+
+      .prob-row {
+        grid-template-columns: 75px 1fr 37px;
+        gap: 7px
+      }
+
+      .footer {
+        font-size: 10px
+      }
+    }
+
+    @media(prefers-reduced-motion:reduce) {
+
+      *,
+      *:before,
+      *:after {
+        animation-duration: .01ms !important;
+        transition-duration: .01ms !important;
+        scroll-behavior: auto !important
+      }
+    }
+  </style>
+</head>
+
+<body data-mood="neutral">
+  <div class="ambient">
+    <div class="orb one"></div>
+    <div class="orb two"></div>
+  </div>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="moodly home"><span
+          class="brand-mark">✳</span><span>mood<em>ly.</em></span></a>
+      <div class="top-right"><span class="pill"><span class="live-dot"></span> AI emotion insights</span><span
+          class="pill">Built with BiGRU <span aria-hidden="true">✦</span></span></div>
+    </header>
+    <main>
+      <section class="hero">
+        <h1>Your words have<br><span class="gradient">feelings, too.</span></h1>
+        <p>Drop in a thought, a message, or a tiny piece of your day. Let AI read between the lines and explore the
+          emotion behind your words.</p>
+      </section>
+      <section class="workspace">
+        <article class="panel input-panel">
+          <div class="panel-heading">
+            <h2>What's on your mind?</h2><span class="step">01 / INPUT</span>
+          </div>
+          <p class="helper">No need to overthink it. Just write the way you naturally would.</p>
+          <form id="emotionForm">
+            <div class="textarea-wrap"><textarea id="textInput" name="text" maxlength="2000" required
+                placeholder="I've been thinking about how far I've come lately..."
+                aria-label="Text to analyze"></textarea>
+              <div class="focus-ring"></div>
+              <div class="textarea-footer"><span>✦ Your words, your space</span><span id="charCount">0 / 2000</span>
+              </div>
+            </div>
+            <div class="examples" aria-label="Try an example"><button class="example" type="button"
+                data-text="I finally got the opportunity I've been waiting for! I can't stop smiling.">☀️ A happy
+                moment</button><button class="example" type="button"
+                data-text="I miss the way things used to be. Everything feels a little empty lately.">🌧️ A tough
+                day</button><button class="example" type="button"
+                data-text="I feel like butterflies in my stomach.">💌 Something
+                heartfelt</button></div>
+            <button class="analyze-btn" id="analyzeBtn" type="submit"><span id="btnText">Discover the
+                emotion</span><span class="btn-arrow" id="btnArrow">↗</span></button>
+            <div class="error-box" id="errorBox" role="alert"></div>
+            <p class="privacy-note">Made for curiosity, not judgment <span>♡</span></p>
+          </form>
+        </article>
+        <article class="panel result-panel" aria-live="polite">
+          <div class="result-empty" id="emptyState">
+            <div class="empty-art"><span class="face" id="emptyFace">☺️</span></div>
+            <h3>Your insight lives here</h3>
+            <p>Once you analyze your words, your leading emotion and a full breakdown will show up right here.</p>
+          </div>
+          <div class="result-content" id="resultContent">
+            <div class="result-topline">
+              <h2>Your emotional snapshot</h2><span class="result-tag">✦ JUST FOR YOU</span>
+            </div>
+            <div class="emotion-main">
+              <div class="emotion-icon" id="emotionIcon">😄</div>
+              <div>
+                <div class="emotion-kicker">Your strongest emotion</div>
+                <div class="emotion-name" id="emotionName">Joy</div>
+                <div class="confidence"><strong id="confidence">92%</strong> model confidence</div>
+              </div>
+            </div>
+            <div class="section-title">The full picture <span>Probability by emotion</span></div>
+            <div class="prob-list" id="probList"></div>
+            <div class="result-quote" id="resultQuote"></div>
+            <div class="result-actions"><button class="text-btn" id="tryAgainBtn" type="button">← Try another
+                thought</button></div>
+          </div>
+        </article>
+      </section>
+    </main>
+    <footer class="footer"><span>© 2026 <strong>moodly</strong> · a softer look at sentiment</span><span
+        class="footer-right"><span class="sparkle">✦</span> Built with a little curiosity</span></footer>
+  </div>
+  <script>
+    const $ = (s) => document.querySelector(s);
+    const form = $('#emotionForm'), input = $('#textInput'), count = $('#charCount');
+    const btn = $('#analyzeBtn'), btnText = $('#btnText'), btnArrow = $('#btnArrow');
+    const errorBox = $('#errorBox'), emptyState = $('#emptyState'), resultContent = $('#resultContent');
+    const labels = ['sadness', 'joy', 'love', 'anger', 'fear', 'surprise'];
+    const emojis = { sadness: '😢', joy: '😄', love: '❤️', anger: '😡', fear: '😨', surprise: '😲' };
+    const descriptions = { sadness: 'A quieter, more reflective feeling', joy: 'A bright spark of happiness', love: 'Warmth, connection, and care', anger: 'A strong feeling asking to be heard', fear: 'A sense of worry or uncertainty', surprise: 'A moment of unexpected emotion' };
+    input.addEventListener('input', () => { count.textContent = `${input.value.length} / 2000`; hideError(); });
+    document.querySelectorAll('.example').forEach(b => b.addEventListener('click', () => { input.value = b.dataset.text; input.dispatchEvent(new Event('input')); input.focus(); }));
+    $('#tryAgainBtn').addEventListener('click', () => { resultContent.classList.remove('show'); emptyState.style.display = 'block'; input.focus(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    function hideError() { errorBox.classList.remove('show'); errorBox.textContent = ''; }
+    function showError(message) { errorBox.textContent = message; errorBox.classList.add('show'); }
+    function setLoading(loading) { btn.disabled = loading; btnText.textContent = loading ? 'Reading your words…' : 'Discover the emotion'; btnArrow.textContent = loading ? '✧' : '↗'; }
+    function formatLabel(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+    function renderResult(data) {
+      const emotion = String(data.predicted_emotion || '').toLowerCase();
+      if (!labels.includes(emotion)) throw new Error('The API returned an emotion label I did not recognize. Check the response from your model.');
+      document.body.dataset.mood = emotion;
+      $('#emotionIcon').textContent = emojis[emotion];
+      $('#emotionName').textContent = formatLabel(emotion);
+      $('#confidence').textContent = `${(Number(data.confidence) * 100).toFixed(1)}%`;
+      $('#resultQuote').textContent = data.input_text || input.value.trim();
+      const probs = data.all_probs || {};
+      const sorted = labels.map(label => ({ label, value: Number(probs[label] ?? 0) })).sort((a, b) => b.value - a.value);
+      $('#probList').innerHTML = sorted.map((item, i) => `<div class="prob-row"><div class="prob-label"><span>${emojis[item.label]}</span>${formatLabel(item.label)}</div><div class="prob-track"><div class="prob-fill" data-width="${Math.max(0, Math.min(100, item.value * 100))}%" style="transition-delay:${i * 70}ms"></div></div><div class="prob-value">${(item.value * 100).toFixed(1)}%</div></div>`).join('');
+      emptyState.style.display = 'none'; resultContent.classList.remove('show'); void resultContent.offsetWidth; resultContent.classList.add('show');
+      requestAnimationFrame(() => document.querySelectorAll('.prob-fill').forEach(el => el.style.width = el.dataset.width));
+    }
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault(); hideError();
+      const text = input.value.trim();
+      if (!text) { showError('Write a little something first, then we can explore the emotion behind it.'); input.focus(); return; }
+      setLoading(true);
+      try {
+        // Matches the route shown in the supplied backend: POST /predicct
+        const response = await fetch('/predicct', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) });
+        let data; try { data = await response.json(); } catch { data = {}; }
+        if (!response.ok) { const detail = typeof data.detail === 'string' ? data.detail : `The server returned ${response.status}.`; throw new Error(detail); }
+        renderResult(data);
+      } catch (error) {
+        if (error instanceof TypeError) showError('Could not connect to the API. Make sure FastAPI is running and this page is being served from the same origin.');
+        else showError(`${error.message} If the backend is running, check that its prediction route and response schema are valid.`);
+      } finally { setLoading(false); }
+    });
+  </script>
+</body>
+
+</html>
